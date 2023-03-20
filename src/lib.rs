@@ -5,7 +5,7 @@ pub trait NumberWidth {
     /// Digit count in the given base.
     ///
     /// This is expected to be zero for the number zero, and negative for negative numbers.
-    fn signed_digit_count(&self, base: u64) -> i64;
+    fn signed_digit_count(&self, base: u64) -> isize;
 
     /// Width including leading minus sign if the number is negative.
     ///
@@ -17,7 +17,7 @@ pub trait NumberWidth {
     /// assert_eq!(15u8.signed_width(), 2);
     /// assert_eq!((-33i8).signed_width(), 3);
     /// ```
-    fn signed_width(&self) -> u64 {
+    fn signed_width(&self) -> usize {
         self.signed_width_base(10)
     }
 
@@ -31,10 +31,10 @@ pub trait NumberWidth {
     /// assert_eq!(0xFFu8.signed_width_base(16), 2);
     /// assert_eq!((-0xAAi16).signed_width_base(16), 3);
     /// ```
-    fn signed_width_base(&self, base: u64) -> u64 {
+    fn signed_width_base(&self, base: u64) -> usize {
         let count = match self.signed_digit_count(base) {
-            count if count < 0 => (-count + 1) as u64,
-            count => count as u64,
+            count if count < 0 => (-count + 1) as usize,
+            count => count as usize,
         };
 
         count.max(1)
@@ -53,7 +53,7 @@ pub trait NumberWidth {
     /// assert_eq!(15u8.width(), 2);
     /// assert_eq!((-33i8).width(), 2);
     /// ```
-    fn width(&self) -> u64 {
+    fn width(&self) -> usize {
         self.width_base(10)
     }
 
@@ -61,12 +61,12 @@ pub trait NumberWidth {
     ///
     /// This does not include the width needed for a leading minus sign in case the number is
     /// negative. If that is what you need, consider using the [signed_width_base()][] method.
-    fn width_base(&self, base: u64) -> u64 {
-        (self.signed_digit_count(base).abs() as u64).max(1)
+    fn width_base(&self, base: u64) -> usize {
+        (self.signed_digit_count(base).abs() as usize).max(1)
     }
 }
 
-fn digit_count(num: u64, base: u64) -> u64 {
+fn digit_count(num: u64, base: u64) -> usize {
     let mut width = 0;
     let mut cur = num;
     while cur > 0 {
@@ -98,12 +98,12 @@ fn test_digit_count() {
     }
 }
 
-fn signed_digit_count(num: i64, base: u64) -> i64 {
-    let sign = num.signum();
+fn signed_digit_count(num: i64, base: u64) -> isize {
+    let sign = num.signum() as isize;
     // using just abs() here will panic when num is i64::MIN.
     let num = num.checked_abs().map(|num| num as u64).unwrap_or(i64::MAX as u64 + 1);
     let digit_count = digit_count(num, base);
-    digit_count as i64 * sign
+    digit_count as isize * sign
 }
 
 #[test]
@@ -232,49 +232,61 @@ fn can_determine_width_i64() {
 }
 
 impl NumberWidth for u8 {
-    fn signed_digit_count(&self, base: u64) -> i64 {
-        digit_count((*self).into(), base) as i64
+    fn signed_digit_count(&self, base: u64) -> isize {
+        digit_count((*self).into(), base) as isize
     }
 }
 
 impl NumberWidth for u16 {
-    fn signed_digit_count(&self, base: u64) -> i64 {
-        digit_count((*self).into(), base) as i64
+    fn signed_digit_count(&self, base: u64) -> isize {
+        digit_count((*self).into(), base) as isize
     }
 }
 
 impl NumberWidth for u32 {
-    fn signed_digit_count(&self, base: u64) -> i64 {
-        digit_count((*self).into(), base) as i64
+    fn signed_digit_count(&self, base: u64) -> isize {
+        digit_count((*self).into(), base) as isize
     }
 }
 
 impl NumberWidth for u64 {
-    fn signed_digit_count(&self, base: u64) -> i64 {
-        digit_count(*self, base) as i64
+    fn signed_digit_count(&self, base: u64) -> isize {
+        digit_count(*self, base) as isize
+    }
+}
+
+impl NumberWidth for usize {
+    fn signed_digit_count(&self, base: u64) -> isize {
+        digit_count((*self) as u64, base) as isize
     }
 }
 
 impl NumberWidth for i8 {
-    fn signed_digit_count(&self, base: u64) -> i64 {
+    fn signed_digit_count(&self, base: u64) -> isize {
         signed_digit_count((*self).into(), base)
     }
 }
 
 impl NumberWidth for i16 {
-    fn signed_digit_count(&self, base: u64) -> i64 {
+    fn signed_digit_count(&self, base: u64) -> isize {
         signed_digit_count((*self).into(), base)
     }
 }
 
 impl NumberWidth for i32 {
-    fn signed_digit_count(&self, base: u64) -> i64 {
+    fn signed_digit_count(&self, base: u64) -> isize {
         signed_digit_count((*self).into(), base)
     }
 }
 
 impl NumberWidth for i64 {
-    fn signed_digit_count(&self, base: u64) -> i64 {
+    fn signed_digit_count(&self, base: u64) -> isize {
         signed_digit_count(*self, base)
+    }
+}
+
+impl NumberWidth for isize {
+    fn signed_digit_count(&self, base: u64) -> isize {
+        signed_digit_count((*self) as i64, base)
     }
 }
